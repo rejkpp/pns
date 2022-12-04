@@ -13,16 +13,19 @@ const main = async () => {
   txn = await domainContract.setRecord("first",  "here is the record");
   await txn.wait();
 
-  // txn = await domainContract.connect(superCoder).register("first",  {value: hre.ethers.utils.parseEther('1')});
+  txn = await domainContract.connect(superCoder).register("second",  {value: hre.ethers.utils.parseEther('1')});
+  await txn.wait();
+
+
+  // txn = await domainContract.connect(superCoder).register("areallyfakkinlongdomainname",  {value: hre.ethers.utils.parseEther('1')});
   // await txn.wait();
+  const registeredNames = await domainContract.names(0);
+  console.log(registeredNames);
 
-  txn = await domainContract.connect(superCoder).setRecord("first",  "i want this");
-  await txn.wait();
+  let names = await domainContract.getAllNames();
+  const totalRegisteredNames = names.length;
 
-  txn = await domainContract.connect(superCoder).register("areallyfakkinlongdomainname",  {value: hre.ethers.utils.parseEther('1')});
-  await txn.wait();
- 
-  txn = await domainContract.getAllNames();
+  console.log(totalRegisteredNames);
 
 };
 
