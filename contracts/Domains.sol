@@ -21,9 +21,16 @@ contract Domains is ERC721URIStorage {
 
   mapping(string => address) public domains;
   mapping(string => string) public records;
+  mapping (uint => string) public names;
 
+  address payable public owner;
 
-  constructor(string memory _tld) payable ERC721("ramiro is building a name service", "COM"){
+  error Unauthorized();
+  error AlreadyRegistered();
+  error InvalidName(string name);
+
+  constructor(string memory _tld) ERC721("ramiro is building a name service", "COM") payable {
+    owner = payable(msg.sender);
     tld = _tld;
     console.log("name service nft deployed:", _tld);
   }
@@ -31,19 +38,18 @@ contract Domains is ERC721URIStorage {
   function price(string calldata name) public pure returns(uint) {
     uint len = StringUtils.strlen(name);
     require(len > 0);
-    if (len == 2) {
-      return 4 * 10**16; // 5 MATIC = 5 000 000 000 000 000 000 (18 decimals). We're going with 0.04 Matic cause the faucets don't give a lot
-    } else if (len == 3) {
-      return 3 * 10**16; // To charge smaller amounts, reduce the decimals. This is 0.03
+    if (len == 3) {
+      return 3 * 10**15; // To charge smaller amounts, reduce the decimals. This is 0.003
     } else if (len == 4) {
-      return 2 * 10**16; // To charge smaller amounts, reduce the decimals. This is 0.02
+      return 2 * 10**15; // To charge smaller amounts, reduce the decimals. This is 0.002
     } else {
-      return 1 * 10**16;
+      return 1 * 10**15;
     }
   }
 
   function register(string calldata name) public payable{
-      require(domains[name] == address(0),"domain already registered");
+      if (domains[name] != address(0)) revert AlreadyRegistered();
+      if (!valid(name)) revert InvalidName(name);
 
       uint _price = price(name);
 
@@ -81,22 +87,53 @@ contract Domains is ERC721URIStorage {
       _safeMint(msg.sender, newRecordId);
       _setTokenURI(newRecordId, finalTokenUri);
       domains[name] = msg.sender;
+      names[newRecordId] = name;
 
       _tokenIds.increment();
 
   }
 
+  function valid(string calldata name) public pure returns(bool) {
+    return StringUtils.strlen(name) >= 3 && StringUtils.strlen(name) <= 10;
+  }
   function getAddress(string calldata name) public view returns (address) {
       return domains[name];
   }
 
   function setRecord(string calldata name, string calldata record) public {
-      require(domains[name] == msg.sender,"you are not the owner!!!");
-      records[name] = record;
+    if (msg.sender != domains[name]) revert Unauthorized();
+    records[name] = record;
   }
 
   function getRecord(string calldata name) public view returns(string memory) {
       return records[name];
   }
 
+  modifier onlyOwner() {
+    require(isOwner());
+    _;
+  }
+
+  function isOwner() public view returns (bool) {
+    return msg.sender == owner;
+  }
+
+  function withdraw() public onlyOwner {
+    uint amount = address(this).balance;
+  
+    (bool success, ) = msg.sender.call{value: amount}("");
+    require(success, "Failed to withdraw Matic");
+  } 
+
+  function getAllNames() public view returns (string[] memory) {
+    console.log("Getting all names from contract:");
+    string[] memory allNames = new string[](_tokenIds.current());
+    for (uint i = 0; i < _tokenIds.current(); i++) {
+      allNames[i] = names[i];
+      console.log("token %d: %s", i, allNames[i]);
+    }
+
+    return allNames;
+  }
+  
 }

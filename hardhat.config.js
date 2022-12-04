@@ -1,4 +1,6 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
+require("@nomiclabs/hardhat-etherscan");
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -7,6 +9,6 @@ module.exports = {
     mumbai: {
       url: process.env.QUICK_NODE_END_POINT,
       accounts: [process.env.PRIVATE_KEY],
-    }
-  }
+    },
+  },
 };
