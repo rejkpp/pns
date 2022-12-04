@@ -13,7 +13,13 @@ const main = async () => {
   txn = await domainContract.setRecord("first",  "here is the record");
   await txn.wait();
 
-  txn = await domainContract.connect(superCoder).register("mine",  {value: hre.ethers.utils.parseEther('1')});
+  // txn = await domainContract.connect(superCoder).register("first",  {value: hre.ethers.utils.parseEther('1')});
+  // await txn.wait();
+
+  txn = await domainContract.connect(superCoder).setRecord("first",  "i want this");
+  await txn.wait();
+
+  txn = await domainContract.connect(superCoder).register("areallyfakkinlongdomainname",  {value: hre.ethers.utils.parseEther('1')});
   await txn.wait();
  
   txn = await domainContract.getAllNames();

@@ -9,25 +9,25 @@ const main = async () => {
   const portal = await Token.deploy("com");
   await portal.deployed();
 
-  console.log("Contract deployed to:", domainContract.address);
+  console.log("Contract deployed to:", portal.address);
 
   // CHANGE THIS DOMAIN TO SOMETHING ELSE! I don't want to see OpenSea full of bananas lol
-  let txn = await domainContract.register("bubbles",  {value: hre.ethers.utils.parseEther('0.001')});
+  let txn = await portal.register("bubbles",  {value: hre.ethers.utils.parseEther('0.001')});
   await txn.wait();
   console.log("Minted domain bubbles.com");
 
-  txn = await domainContract.setRecord("bubbles", "i am a record");
+  txn = await portal.setRecord("bubbles", "i am a record");
   await txn.wait();
   console.log("Set record for bubbles.com");
 
-  txn = await domainContract.withdraw();
+  txn = await portal.withdraw();
   await txn.wait();
   console.log("withdraw");
 
-  const address = await domainContract.getAddress("bubbles");
+  const address = await portal.getAddress("bubbles");
   console.log("Owner of domain bubbles:", address);
 
-  const balance = await hre.ethers.provider.getBalance(domainContract.address);
+  const balance = await hre.ethers.provider.getBalance(portal.address);
   console.log("Contract balance:", hre.ethers.utils.formatEther(balance));
 }
 
