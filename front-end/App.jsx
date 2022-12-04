@@ -94,7 +94,7 @@ const App = () => {
       } catch (error) {
         // This error code means that the chain we want has not been added to MetaMask
         // In this case we ask the user to add it to their MetaMask
-        alert("mumbai network not added to metamask");
+        alert("add mumbai network to metamask");
         if (error.code === 4902) {
           try {
             await window.ethereum.request({
@@ -102,10 +102,10 @@ const App = () => {
               params: [
                 {	
                   chainId: '0x13881',
-                  chainName: 'Polygon Mumbai Testnet',
-                  rpcUrls: ['https://rpc-mumbai.maticvigil.com/'],
+                  chainName: 'Matic Mumbai',
+                  rpcUrls: ['https://matic-mumbai.chainstacklabs.com'],
                   nativeCurrency: {
-                      name: "Mumbai Matic",
+                      name: "Matic",
                       symbol: "MATIC",
                       decimals: 18
                   },
@@ -414,7 +414,8 @@ const App = () => {
 					<header>
             <div className="left">
               <p className="title"> ramiro name service on polygon testnet</p>
-              <p className="subtitle">Your immortal API on the blockchain!</p>
+              <p className="subtitle">make sure to connect to mumbai testnet.</p>
+              <p>register your domain through the mint button. <br></br>it's cheap. <br></br>0.01 - 0.03 matic</p>
             </div>
 
             {/* Display a logo and wallet connection status*/}
