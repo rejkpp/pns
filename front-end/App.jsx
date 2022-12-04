@@ -1,33 +1,32 @@
-import React, { useEffect, useState } from "react";
 import './styles/App.css';
-import twitterLogo from './assets/twitter-logo.svg';
 import { ethers } from "ethers";
-import contractAbi from './utils/contractABI.json';
-
-import polygonLogo from './assets/polygonlogo.png';
 import ethLogo from './assets/ethlogo.png';
 import { networks } from './utils/networks';
-
-// Constants
-const TWITTER_HANDLE = '_buildspace';
-const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
+import contractAbi from './utils/contractABI.json';
+import React, { useEffect, useState } from "react";
+import twitterLogo from './assets/twitter-logo.svg';
+import polygonLogo from './assets/polygonlogo.png';
 
 // Add the domain you will be minting
 const tld = '.com';
+// Constants
+const TWITTER_HANDLE = '_buildspace';
+const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
 const CONTRACT_ADDRESS = '0x241e19964C29c0E424FB14d0759040D6b59D15C4';
 
 
+
+
 const App = () => {
-
-  const [currentAccount, setCurrentAccount] = useState('');
-
  	// Add some state data propertie
-	const [domain, setDomain] = useState('');
-  const [editing, setEditing] = useState(false);
-	const [loading, setLoading] = useState(false);
+  const [mints, setMints] = useState([]);
+  const [domain, setDomain] = useState('');
   const [record, setRecord] = useState('');
   const [network, setNetwork] = useState('');
-  const [mints, setMints] = useState([]);
+  const [editing, setEditing] = useState(false);
+	const [loading, setLoading] = useState(false);
+	const [minting, setMinting] = useState(false);
+  const [currentAccount, setCurrentAccount] = useState('');
 
 
   // Implement your connectWallet method here
@@ -95,6 +94,7 @@ const App = () => {
       } catch (error) {
         // This error code means that the chain we want has not been added to MetaMask
         // In this case we ask the user to add it to their MetaMask
+        alert("mumbai network not added to metamask");
         if (error.code === 4902) {
           try {
             await window.ethereum.request({
@@ -133,9 +133,13 @@ const App = () => {
 		alert('Domain must be at least 3 characters long');
 		return;
 	}
+	if (domain.length > 10) {
+		alert('Domain cannot be more than 10 characters long');
+		return;
+	}
 	// Calculate price based on length of domain (change this to match your contract)	
 	// 3 chars = 0.03 MATIC, 4 chars = 0.02 MATIC, 5 or more = 0.01 MATIC
-	const price = domain.length === 3 ? '0.003' : domain.length === 4 ? '0.002' : '0.001';
+	const price = domain.length === 3 ? '0.03' : domain.length === 4 ? '0.02' : '0.01';
 	console.log("Minting domain", domain, "with price", price);
   try {
     const { ethereum } = window;
@@ -144,6 +148,24 @@ const App = () => {
       const signer = provider.getSigner();
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractAbi.abi, signer);
 
+      setMinting (true);
+      setLoading (true);
+
+      // Get all the domain names from our contract
+      const names = await contract.getAllNames();
+      const totalRegisteredNames = names.length;
+      
+      console.log(totalRegisteredNames);
+      for (let i = 0; i < totalRegisteredNames; i++) {
+        const registeredName = await contract.names(i);
+        if (domain == registeredName) {
+          alert(domain+tld+ " already registered. please choose a different name");
+          setDomain('');
+          setLoading (false);
+          setMinting (false);
+        }
+       }
+      
 			console.log("Going to pop wallet now to pay gas...")
       let tx = await contract.register(domain, {value: ethers.utils.parseEther(price)});
       // Wait for the transaction to be mined
@@ -152,27 +174,50 @@ const App = () => {
 			// Check if the transaction was successfully completed
 			if (receipt.status === 1) {
 				console.log("Domain minted! https://mumbai.polygonscan.com/tx/"+tx.hash);
+        alert("minted: "+domain+tld);
 				
-				// Set the record for the domain
-				tx = await contract.setRecord(domain, record);
-				await tx.wait();
-
-				console.log("Record set! https://mumbai.polygonscan.com/tx/"+tx.hash);
-
-           // Call fetchMints after 2 seconds
-        setTimeout(() => {
+        if (!record) { 
+          setDomain('');
+          setLoading (false);
+          setMinting (false);
           fetchMints();
-        }, 2000);
+          return 
+        }
 
-				setRecord('');
-				setDomain('');
+        try {
+          tx = await contract.setRecord(domain, record);
+          await tx.wait();
+
+          console.log("Record set! https://mumbai.polygonscan.com/tx/"+tx.hash);
+
+            // Call fetchMints after 2 seconds
+          setTimeout(() => {
+            fetchMints();
+          }, 2000);
+
+          setRecord('');
+          setDomain('');
+          setLoading (false);
+          setMinting (false);
+          
+        } catch (error) {
+          setEditing(true);
+          setLoading (false);
+          setMinting (false);
+          fetchMints();
+          console.log(error);  
+        }
 			}
 			else {
+        setLoading (false);
+        setMinting (false);
 				alert("Transaction failed! Please try again");
 			}
     }
   }
   catch(error){
+    setLoading (false);
+    setMinting (false);
     console.log(error);
   }
 }
@@ -212,8 +257,6 @@ const App = () => {
   }
 
 
-
-  
   const updateDomain = async () => {
     if (!record || !domain) { return }
     setLoading(true);
@@ -248,6 +291,7 @@ const App = () => {
       </button>
     </div>
   );
+
 
   // Form to enter domain name and data
 	const renderInputForm = () =>{
@@ -293,11 +337,17 @@ const App = () => {
               </button>  
             </div>
           ) : (
-            // If editing is not true, the mint button will be returned instead
-            <button className='cta-button mint-button' disabled={loading} onClick={mintDomain}>
-              Mint
-            </button>  
-          )}
+            minting ? (
+              <div>
+                <h1>minting...</h1>
+              </div>
+            ) : (
+              <button className='cta-button mint-button' disabled={loading} onClick={mintDomain}>
+                Mint
+              </button>  
+            )          )}
+
+
 
 			</div>
 		);
